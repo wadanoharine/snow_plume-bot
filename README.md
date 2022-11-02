@@ -1,12 +1,2 @@
-# snow_plume
-
-## How to start
-
-1. generate project using `nb create` .
-2. create your plugin using `nb plugin create` .
-3. writing your plugins under `snow_plume/plugins` folder.
-4. run your bot using `nb run` .
-
-## Documentation
-
-See [Docs](https://v2.nonebot.dev/)
+2022.11.2
+  初版集成了“涩图 get”和“今日运势”两个功能
