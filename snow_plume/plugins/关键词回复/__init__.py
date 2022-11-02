@@ -18,7 +18,11 @@ async def message_checker_setu_get(event:Event):
     # 从事件中提取消息纯文本
     msg = event.get_plaintext()
     # 关键词列表
-    target_pattern_list = ['上好！','.*来张.?图','[^(不可以)]*色色！?$','[^(不可以)]*涩涩！?$','[^(不可以)]*瑟瑟！?$','看看.*！','访问！','康康.*！']
+    target_pattern_list = ['上好！',
+                           '[来整][张点](.*)[色涩瑟]图',
+                           '[^(不可以)]*(色色|涩涩|瑟瑟)！?$',
+                           '(看看|康康).*！',
+                           '访问！']
     # 匹配过程
     rule_result = False
     for pattern in target_pattern_list:
@@ -51,11 +55,13 @@ async def handling(msg: Message = EventMessage()):
         await setu_get_matcher.send("涩图 get")
         time.sleep(7)
         await setu_get_matcher.send("要注意节制喵")
-    else:                  
-        await setu_get_matcher.send("检测到色色能量！")
-        time.sleep(2)
-        prob = random.randint(1,100)    
-        if prob <= 95:
+    else:
+        prob = random.randint(1,100)
+        if prob >= 50:
+            await setu_get_matcher.send("检测到色色能量！")
+            time.sleep(2)
+        
+        if prob <= 90:
             await setu_get_matcher.send("允许色色！")
             time.sleep(1)
             await setu_get_matcher.send("涩图 get")
@@ -67,7 +73,7 @@ async def handling(msg: Message = EventMessage()):
 
 async def message_checker_luck(event:Event):
     msg = event.get_plaintext()
-    if re.match(".*运势$",msg):
+    if re.match(".*运势(查询|如何|怎么样)?$",msg):
         rule_result = True
     else:
         rule_result = False
