@@ -6,9 +6,9 @@ from nonebot import rule
 import random
 import time
 import re
+from snow_plume.mysql import execute_procedure
+from snow_plume.handling_message import sending_message
 
-# 功能中重复使用的函数
-# 暂无
 
 # 插件主体：今日运势
 # 用户在对话框输入想要查看今日运势的相关讯息后，轻雪酱会识别并返回抽签的结果
@@ -43,18 +43,27 @@ async def handling(bot:Bot,event:Event):    #要调用api，需要添加Bot对�
     })                                                              #go-cqhttp API调用：https://docs.go-cqhttp.org/api/
     nickname = raw_data['nickname']                                 #从详细信息中获取{“昵称”：“nickname”}
 
-    await fortune_matcher.send("要开始抽签了喔！我看看，今天{}的运势……".format(nickname))
-    time.sleep(3)
+    # 调用mysql数据库，记录运势
+    user = session_id[2]
+    args_in = [f'{user}']
+    args_out = ['fortune','level_name','greetings','greeting_content','charm_item','charm_content']
+    proc_name = 'fortune_get'
 
-    prob = random.randint(-3,110)
-    fortune_level_list = [0,9,39,69,99,110]
-    greetings_list = [("诶诶，是大凶吗！？","！！\n我还是第一次见到大凶呢……今天真的没有问题吗！！？"),
-    ("唔呃呃，居然是凶吗……","。\n轻雪酱会为你祈祷的！"),
-    ("是末吉喔！","。\n看来今天也会拥有小幸运呢！"),
-    ("是吉耶！","。\n幸运的事会发生吧？"),
-    ("中吉！","。\n今天会发生什么好事呢？"),
-    ("哇！是大吉诶！","！！\n现在的轻雪酱和你一样幸福！")]
-    for i in range(0,6):
-        if prob <= fortune_level_list[i]:
-            greetings = greetings_list[i]
-            await fortune_matcher.finish("{}运势指数是：{}{}".format(greetings[0],prob,greetings[1]))
+    proc = execute_procedure(proc_name,args_in,args_out)
+    proc_result = proc.proc()
+
+    if proc_result['Code'] == 1062:         # 返回码为1062说明设置了重复主键，即同一用户在某日请求了多次运势
+        proc = execute_procedure('fortune_get_when_duplicated',args_in,args_out)
+        proc_result = proc.proc()
+        msg_list = [(f"{nickname}： 今天已经抽过签了哟！"),
+                    (f"你今天的幸运等级是{proc_result['level_name']} (幸运指数:{proc_result['fortune']})"),
+                    (f"今日幸运物：{proc_result['charm_item']}。\n{proc_result['charm_content']}")]
+        await sending_message(msg_list)
+    else:
+        await fortune_matcher.send("要开始抽签了喔！我看看，今天{}的运势……".format(nickname))
+        time.sleep(3)
+        msg_list = [(f"{proc_result['greetings']}幸运指数是{proc_result['fortune']}，{proc_result['greeting_content']}"),
+                    (f"今日幸运物：{proc_result['charm_item']}。\n{proc_result['charm_content']}")]
+        await sending_message(msg_list)
+
+
